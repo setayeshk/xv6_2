@@ -20,26 +20,45 @@ struct rb_tree {
 
 struct rb_tree rbtree;
 
-void rb_left_rotate(struct proc* x) {
-    struct proc* y = x->right;
-   
-    x->right = y->left;
-    if (y->left)
-        y->left->parent = x;
 
-   
+void rb_right_rotate(struct proc* x)
+{
+    struct proc* left = x->left;
+    x->left = left->right;
+    if (x->left)
+        x->left->parent = x;
+    left->parent = x->parent;
+    if (!x->parent)
+        rbtree.root = left;
+    else if (x == x->parent->left)
+        x->parent->left = left;
+    else
+        x->parent->right = left;
+    left->right = x;
+    x->parent = left;
+}
+ 
+
+void rb_left_rotate(struct proc* x)
+{
+    struct proc* y = x->right;
+
+    x->right = y->left;
+    if (x->right)
+        x->right->parent = x;
+
     y->parent = x->parent;
-    if (x->parent)
+    if (!x->parent)
         rbtree.root = y;
     else if (x == x->parent->left)
         x->parent->left = y;
     else
         x->parent->right = y;
 
-    
     y->left = x;
     x->parent = y;
 }
+
 
 
 static struct proc *initproc;
