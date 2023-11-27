@@ -56,6 +56,7 @@ struct proc {
   struct proc* right;
   struct proc* left;
   enum Color color;
+  int weight;
 
 };
 

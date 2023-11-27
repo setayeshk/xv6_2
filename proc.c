@@ -12,6 +12,36 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+struct rb_tree {
+    struct spinlock lock;
+    struct proc* root;
+    int count;
+};
+
+struct rb_tree rbtree;
+
+void rb_left_rotate(struct proc* x) {
+    struct proc* y = x->right;
+   
+    x->right = y->left;
+    if (y->left)
+        y->left->parent = x;
+
+   
+    y->parent = x->parent;
+    if (x->parent)
+        rbtree.root = y;
+    else if (x == x->parent->left)
+        x->parent->left = y;
+    else
+        x->parent->right = y;
+
+    
+    y->left = x;
+    x->parent = y;
+}
+
+
 static struct proc *initproc;
 
 int nextpid = 1;
