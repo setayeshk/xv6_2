@@ -55,7 +55,7 @@ mycpu(void)
 // Disable interrupts so that we are not rescheduled
 // while reading proc from the cpu structure
 struct proc*
-myproc(void) {
+myproc(void) {        
   struct cpu *c;
   struct proc *p;
   pushcli();
@@ -385,6 +385,7 @@ sched(void)
 void
 yield(void)
 {
+  //interrupt dige nakhore
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
   sched();
