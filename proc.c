@@ -22,43 +22,46 @@ struct rb_tree {
 
 struct rb_tree rbtree;
 
-void rb_insert(struct proc* z) {
 
-  // if(rbtree.root==NULL)
-  //   return z; //age khali bud 
-
-  acquire(&rbtree.lock);
-
-  struct proc* y = NULL;
-  struct proc* x = rbtree.root;
-  x->color=RED;
-  while (x != NULL) {
-    y = x;
-    if (z->vruntime< x->vruntime)
-      x = x->left;
+void rightrotate(struct proc* x)
+{
+    struct proc* left = x->left;
+    x->left = left->right;
+    if (x->left)
+        x->left->parent = x;
+    left->parent = x->parent;
+    if (!x->parent)
+        rbtree.root = left;
+    else if (x == x->parent->left)
+        x->parent->left = left;
     else
-      x = x->right;
-  }
-
-  z->parent = y;
-  if (y == NULL)
-    rbtree.root = z; // khali bude
-
-  else if (z->vruntime < y->vruntime)
-    y->left = z;
-  else
-    y->right = z;
-
-  // if(rbtree.root!=z){
-    rb_insert_fix(z);
-  // }
-  // else{
-  //   rbtree
-  // }
-  
-  release(&rbtree.lock);
-  
+        x->parent->right = left;
+    left->right = x;
+    x->parent = left;
 }
+ 
+
+void leftrotate(struct proc* x)
+{
+    struct proc* y = x->right;
+
+    x->right = y->left;
+    if (x->right)
+        x->right->parent = x;
+
+    y->parent = x->parent;
+    if (!x->parent)
+        rbtree.root = y;
+    else if (x == x->parent->left)
+        x->parent->left = y;
+    else
+        x->parent->right = y;
+
+    y->left = x;
+    x->parent = y;
+}
+
+
 
 void rb_insert_fix(struct proc* z)
 {
@@ -149,43 +152,49 @@ void rb_insert_fix(struct proc* z)
 }
 
 
-void rb_right_rotate(struct proc* x)
-{
-    struct proc* left = x->left;
-    x->left = left->right;
-    if (x->left)
-        x->left->parent = x;
-    left->parent = x->parent;
-    if (!x->parent)
-        rbtree.root = left;
-    else if (x == x->parent->left)
-        x->parent->left = left;
+void rb_insert(struct proc* z) {
+
+  // if(rbtree.root==NULL)
+  //   return z; //age khali bud 
+
+  acquire(&rbtree.lock);
+
+  struct proc* y = NULL;
+  struct proc* x = rbtree.root;
+  x->color=RED;
+  while (x != NULL) {
+    y = x;
+    if (z->vruntime< x->vruntime)
+      x = x->left;
     else
-        x->parent->right = left;
-    left->right = x;
-    x->parent = left;
+      x = x->right;
+  }
+
+  z->parent = y;
+  if (y == NULL)
+    rbtree.root = z; // khali bude
+
+  else if (z->vruntime < y->vruntime)
+    y->left = z;
+  else
+    y->right = z;
+
+  // if(rbtree.root!=z){
+    rb_insert_fix(z);
+  // }
+  // else{
+  //   rbtree
+  // }
+  
+  release(&rbtree.lock);
+  
 }
- 
 
-void rb_left_rotate(struct proc* x)
-{
-    struct proc* y = x->right;
 
-    x->right = y->left;
-    if (x->right)
-        x->right->parent = x;
 
-    y->parent = x->parent;
-    if (!x->parent)
-        rbtree.root = y;
-    else if (x == x->parent->left)
-        x->parent->left = y;
-    else
-        x->parent->right = y;
 
-    y->left = x;
-    x->parent = y;
-}
+
+
 
 
 
