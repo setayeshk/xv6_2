@@ -6,6 +6,8 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include <stddef.h>
+#include <stdbool.h>
 
 struct {
   struct spinlock lock;
@@ -19,6 +21,132 @@ struct rb_tree {
 };
 
 struct rb_tree rbtree;
+
+void rb_insert(struct proc* z) {
+
+  // if(rbtree.root==NULL)
+  //   return z; //age khali bud 
+
+  acquire(&rbtree.lock);
+
+  struct proc* y = NULL;
+  struct proc* x = rbtree.root;
+  x->color=RED;
+  while (x != NULL) {
+    y = x;
+    if (z->vruntime< x->vruntime)
+      x = x->left;
+    else
+      x = x->right;
+  }
+
+  z->parent = y;
+  if (y == NULL)
+    rbtree.root = z; // khali bude
+
+  else if (z->vruntime < y->vruntime)
+    y->left = z;
+  else
+    y->right = z;
+
+  // if(rbtree.root!=z){
+    rb_insert_fix(z);
+  // }
+  // else{
+  //   rbtree
+  // }
+  
+  release(&rbtree.lock);
+  
+}
+
+void rb_insert_fix(struct proc* z)
+{
+    struct proc* parent_z = NULL;
+    struct proc* grand_parent_z = NULL;
+    struct proc* uncle = NULL;
+    bool uncle_l=false;
+    bool uncle_r=false;
+    if(rbtree.root==z){
+      z->color=BLACK;
+    }
+    else {
+      while(z->parent->color!=BLACK && z->color==RED && z!=rbtree.root){
+        parent_z = z->parent;
+        grand_parent_z = z->parent->parent;
+        // uncle black | null
+        if(parent_z == grand_parent_z->left){
+          uncle= grand_parent_z->right;
+          uncle_r=true;
+          uncle_l=false;
+        }
+        else{
+          uncle = grand_parent_z->left;
+          uncle_l=true;
+          uncle_r=false;
+        }
+
+
+        if(uncle!=NULL && uncle->color==RED){
+
+          // grand_parent_z->color = RED;
+          parent_z->color = BLACK;
+          uncle->color = BLACK;
+          if(grand_parent_z!=rbtree.root){
+            grand_parent_z->color = RED;
+            // inja ba gg fargh
+          }
+           z = grand_parent_z;
+        }
+        else{
+
+            if(uncle_r && z==z->parent->right){   //      0    va kolan chap
+                                                    // 0     
+                                                        //0
+              leftrotate(parent_z);
+              z = parent_z;
+              parent_z = z->parent;
+            }
+            if(uncle_r && z==z->parent->left){   //   0
+                                                  //0
+                                                //0
+
+              rightrotate(grand_parent_z);
+              int t = parent_z->color;
+              parent_z->color = grand_parent_z->color;
+              grand_parent_z->color = t;
+              z = parent_z;
+              
+            }
+            if(uncle_l && z==z->parent->right){  //0
+                                                    //0
+                                                      //0
+
+              leftrotate(grand_parent_z);
+              int t = parent_z->color;
+              parent_z->color = grand_parent_z->color;
+              grand_parent_z->color = t;
+              z = parent_z;
+
+              
+            }
+            if(uncle_l && z==z->parent->left){ //0
+                                                  //0
+                                                //0
+
+              rightrotate(parent_z);
+              z = parent_z;
+              parent_z = z->parent;
+              
+            }
+
+
+
+        }
+
+      }
+    }
+}
 
 
 void rb_right_rotate(struct proc* x)
