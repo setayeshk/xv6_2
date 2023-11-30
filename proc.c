@@ -23,7 +23,7 @@ struct rb_tree {
 struct rb_tree rbtree;
 
 
-void rightrotate(struct proc* x)
+void rb_rightrotate(struct proc* x) // ketab
 {
     struct proc* left = x->left;
     x->left = left->right;
@@ -41,7 +41,7 @@ void rightrotate(struct proc* x)
 }
  
 
-void leftrotate(struct proc* x)
+void rb_leftrotate(struct proc* x) //ketab
 {
     struct proc* y = x->right;
 
@@ -106,7 +106,7 @@ void rb_insert_fix(struct proc* z)
             if(uncle_r && z==z->parent->right){   //      0    va kolan chap
                                                     // 0     
                                                         //0
-              leftrotate(parent_z);
+              rb_leftrotate(parent_z);
               z = parent_z;
               parent_z = z->parent;
             }
@@ -114,7 +114,7 @@ void rb_insert_fix(struct proc* z)
                                                   //0
                                                 //0
 
-              rightrotate(grand_parent_z);
+              rb_rightrotate(grand_parent_z);
               int t = parent_z->color;
               parent_z->color = grand_parent_z->color;
               grand_parent_z->color = t;
@@ -125,7 +125,7 @@ void rb_insert_fix(struct proc* z)
                                                     //0
                                                       //0
 
-              leftrotate(grand_parent_z);
+              rb_leftrotate(grand_parent_z);
               int t = parent_z->color;
               parent_z->color = grand_parent_z->color;
               grand_parent_z->color = t;
@@ -137,7 +137,7 @@ void rb_insert_fix(struct proc* z)
                                                   //0
                                                 //0
 
-              rightrotate(parent_z);
+              rb_rightrotate(parent_z);
               z = parent_z;
               parent_z = z->parent;
               
@@ -201,6 +201,18 @@ struct proc* rb_incorde_l(struct proc* x){ // b tarin kucheck taring ha
   return y;
 }
 
+struct proc* rb_min(struct proc* x) //to shkehaye x min vruntime peyda
+{
+  struct proc* y= NULL;
+  while(x!=NULL){
+    y=x;
+    x=x->left;
+  }
+  return y;
+
+};
+
+
 struct proc* rb_incorde_r(struct proc* x){ // min max ha
   struct proc* y = x-> right;
   struct proc* z = y-> left;
@@ -225,10 +237,121 @@ struct  proc* rb_select(struct proc* x)
   return temp;
 };
 
+void rb_delete_fix(struct proc* x){ //baraye in baksh az ketab estefade
+  struct proc* sibling=NULL;
+  while (x != rbtree.root && x->color == BLACK){
+    if(x==x->parent->left){
+      sibling=x->parent->right;
 
-void rb_delete(struct proc* z){
+      if(sibling->color==RED){
+        sibling->color=BLACK;
+        x->parent->color=RED;
+        rb_leftrotate(x->parent);
+        sibling=x->parent->right;
+      }
 
+      if(sibling->left->color==BLACK && sibling->right->color==BLACK){
+        sibling->color=RED;
+        x=x->parent;
+      }
+
+      else {
+        if(sibling->right->color==BLACK){
+          sibling->left->color=BLACK;
+          sibling->color=RED;
+          rb_rightrotate(sibling);
+          sibling=x->parent->right;
+
+        }
+        
+        sibling->color=x->parent->color;
+        x->parent->color=BLACK;
+        sibling->right->color=BLACK;
+        rb_leftrotate(x->parent);
+        x=rbtree.root;
+      }
+
+
+    }
+    else{
+      sibling=x->parent->left;
+
+      if(sibling->color==RED){
+        sibling->color=BLACK;
+        x->parent->color=RED;
+        rb_rightrotate(x->parent);
+        sibling=x->parent->left;
+      }
+
+      if(sibling->right->color==BLACK && sibling->left->color==BLACK){
+        sibling->color=RED;
+        x=x->parent;
+      }
+
+      else {
+        if(sibling->left->color==BLACK){
+          sibling->right->color=BLACK;
+          sibling->color=RED;
+          rb_leftrotate(sibling);
+          sibling=x->parent->left;
+
+        }
+        
+        sibling->color=x->parent->color;
+        x->parent->color=BLACK;
+        sibling->left->color=BLACK;
+        rb_rightrotate(x->parent);
+        x=rbtree.root;
+      }
+    }
+  }
+
+  x->color=BLACK;
+  
 }
+
+void rb_delete(int pid){ //baraye in baksh az ketab estefade
+  struct proc* x;
+  struct proc* z=rb_select(z);
+  if(z==NULL){
+    //not found
+  }
+  struct proc* y=z;
+  enum Color o_color=y->color; // rang proc ke hazf
+  
+
+  if(z->left==NULL){
+    x=z->right;
+    rb_transplant(z,x);
+  }
+  else if(z->right==NULL){
+    x=z->left;
+    rb_transplant(z,x);
+  }
+  else{
+    y=rb_min(z->right);
+    o_color=y->color;
+    x=y->right;
+    if(y->parent==z){
+      x->parent=y;
+    }
+    else{
+      rb_transplant(y,y->right);
+      y->right=z->right;
+      y->right->parent=y;
+    }
+    rb_transplant(z,y);
+    y->left=z->left;
+    y->left->parent=y;
+    y->color=z->color;
+    
+  }
+  if(o_color==BLACK){
+      rb_delete_fix(x);
+  }
+}
+
+
 
 void rb_transplant(struct proc* u, struct proc* v){
   if(u->parent==NULL){
