@@ -191,9 +191,57 @@ void rb_insert(struct proc* z) {
 }
 
 
+struct proc* rb_incorde_l(struct proc* x){ // b tarin kucheck taring ha
+  struct proc* y = x-> left;
+  struct proc* z = y-> right;
+  while(z!=NULL){
+    y=z;
+    z=z->right;
+  }
+  return y;
+}
+
+struct proc* rb_incorde_r(struct proc* x){ // min max ha
+  struct proc* y = x-> right;
+  struct proc* z = y-> left;
+  while(z!=NULL){
+    y=z;
+    z=z->left;
+  }
+  return y;
+}
+
+struct  proc* rb_select(struct proc* x)
+{
+  struct proc* temp = rbtree.root;
+  while(temp!=NULL && temp->pid!=x->pid){
+    if(x->vruntime>temp->vruntime){
+      temp=temp->right;
+    }
+    else{
+      temp=temp->left;
+    }
+  }
+  return temp;
+};
 
 
+void rb_delete(struct proc* z){
 
+}
+
+void rb_transplant(struct proc* u, struct proc* v){
+  if(u->parent==NULL){
+    rbtree.root=v;
+  }
+  else if(u=u->parent->left){
+    u->parent->left=v;
+  }
+  else{
+    u->parent->right=v;
+  }
+  v->parent=u->parent;
+}
 
 
 
