@@ -237,6 +237,20 @@ struct  proc* rb_select(struct proc* x)
   return temp;
 };
 
+void rb_transplant(struct proc* u, struct proc* v){
+  if(u->parent==NULL){
+    rbtree.root=v;
+  }
+  else if(u==u->parent->left){
+    u->parent->left=v;
+  }
+  else{
+    u->parent->right=v;
+  }
+  v->parent=u->parent;
+}
+
+
 void rb_delete_fix(struct proc* x){ //baraye in baksh az ketab estefade
   struct proc* sibling=NULL;
   while (x != rbtree.root && x->color == BLACK){
@@ -310,9 +324,10 @@ void rb_delete_fix(struct proc* x){ //baraye in baksh az ketab estefade
   
 }
 
-void rb_delete(int pid){ //baraye in baksh az ketab estefade
+void rb_delete(struct proc* a){ //baraye in baksh az ketab estefade
   struct proc* x;
-  struct proc* z=rb_select(z);
+  // struct proc* z=rb_select(a);//baraye peyda kardan ba pid bud
+  struct proc*z=a;
   if(z==NULL){
     //not found
   }
@@ -353,18 +368,6 @@ void rb_delete(int pid){ //baraye in baksh az ketab estefade
 
 
 
-void rb_transplant(struct proc* u, struct proc* v){
-  if(u->parent==NULL){
-    rbtree.root=v;
-  }
-  else if(u=u->parent->left){
-    u->parent->left=v;
-  }
-  else{
-    u->parent->right=v;
-  }
-  v->parent=u->parent;
-}
 
 
 
