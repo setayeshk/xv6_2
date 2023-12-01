@@ -17,10 +17,13 @@ struct {
 struct rb_tree {
     struct spinlock lock;
     struct proc* root;
+    int total_weight;
+    int period;
     int count;
 };
 
 struct rb_tree rbtree;
+int min_granularity = 2;
 
 void rb_rightrotate(struct proc* x) // ketab
 {
@@ -182,9 +185,12 @@ void rb_insert(struct proc* z)
     rbtree.root->parent = NULL;
 
   rbtree.count ++;
+  
+  //Calculate weight
+  z->weight = (int) (1024 / pow(1.25, z->nice));
+  rbtree.total_weight += z->weight;
 
   rb_insert_fix(z);
-
   release(&rbtree.lock);
 }
 
@@ -348,7 +354,12 @@ void rb_delete(struct proc* a) //baraye in baksh az ketab estefade
       rb_delete_fix(x);
     }
   }
+  if(((NPROC / 2) / min_granularity) < rbtree.count)
+    rbtree.period = min_granularity * rbtree.count;
+
   rbtree.count --;
+  a->time_slice = (a->weight * rbtree.period) / rbtree.total_weight;
+  rbtree.total_weight -= a->weight;
   release(&rbtree.lock);
 }
 
@@ -365,6 +376,8 @@ pinit(void)
 {
   initlock(&ptable.lock, "ptable");
   initlock(&rbtree.lock, "rbtree");
+  rbtree.period = NPROC / 2;
+  rbtree.total_weight = 0;
   rbtree.root = NULL;
   rbtree.count = 0;
 }

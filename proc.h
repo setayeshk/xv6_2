@@ -33,7 +33,6 @@ struct context {
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
-
 enum Color { RED, BLACK };
 
 // Per-process state
@@ -52,12 +51,12 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int vruntime;       
-  int ptime_slice;    //time slice k ba tavajoh be nesbat weight
+  int time_slice;    //time slice k ba tavajoh be nesbat weight
   struct proc* right;
   struct proc* left;
   enum Color color;
   int weight;
-
+  int nice;
 };
 
 // Process memory is laid out contiguously, low addresses first:
