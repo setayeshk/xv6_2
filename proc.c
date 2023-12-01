@@ -22,7 +22,6 @@ struct rb_tree {
 
 struct rb_tree rbtree;
 
-
 void rb_rightrotate(struct proc* x) // ketab
 {
     struct proc* left = x->left;
@@ -40,7 +39,6 @@ void rb_rightrotate(struct proc* x) // ketab
     x->parent = left;
 }
  
-
 void rb_leftrotate(struct proc* x) //ketab
 {
     struct proc* y = x->right;
@@ -61,8 +59,6 @@ void rb_leftrotate(struct proc* x) //ketab
     x->parent = y;
 }
 
-
-
 void rb_insert_fix(struct proc* z)
 {
     struct proc* parent_z = NULL;
@@ -70,6 +66,7 @@ void rb_insert_fix(struct proc* z)
     struct proc* uncle = NULL;
     bool uncle_l=false;
     bool uncle_r=false;
+    
     if(rbtree.root==z){
       z->color=BLACK;
     }
@@ -142,15 +139,11 @@ void rb_insert_fix(struct proc* z)
               parent_z = z->parent;
               
             }
-
-
-
         }
 
       }
     }
 }
-
 
 void rb_insert(struct proc* z) {
 
@@ -187,9 +180,7 @@ void rb_insert(struct proc* z) {
   // }
   
   release(&rbtree.lock);
-  
 }
-
 
 struct proc* rb_incorde_l(struct proc* x){ // b tarin kucheck taring ha
   struct proc* y = x-> left;
@@ -211,7 +202,6 @@ struct proc* rb_min(struct proc* x) //to shkehaye x min vruntime peyda
   return y;
 
 };
-
 
 struct proc* rb_incorde_r(struct proc* x){ // min max ha
   struct proc* y = x-> right;
@@ -249,7 +239,6 @@ void rb_transplant(struct proc* u, struct proc* v){
   }
   v->parent=u->parent;
 }
-
 
 void rb_delete_fix(struct proc* x){ //baraye in baksh az ketab estefade
   struct proc* sibling=NULL;
@@ -365,12 +354,6 @@ void rb_delete(struct proc* a){ //baraye in baksh az ketab estefade
       rb_delete_fix(x);
   }
 }
-
-
-
-
-
-
 
 static struct proc *initproc;
 
@@ -511,6 +494,8 @@ userinit(void)
   p->state = RUNNABLE;
 
   release(&ptable.lock);
+
+  rb_insert(p);
 }
 
 // Grow current process's memory by n bytes.
@@ -577,6 +562,8 @@ fork(void)
   np->state = RUNNABLE;
 
   release(&ptable.lock);
+
+  rb_insert(np);
 
   return pid;
 }
@@ -748,6 +735,7 @@ yield(void)
   //interrupt dige nakhore
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  rb_insert(myproc());
   sched();
   release(&ptable.lock);
 }
@@ -822,7 +810,10 @@ wakeup1(void *chan)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
+    {
       p->state = RUNNABLE;
+      rb_insert(p);
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -848,7 +839,10 @@ kill(int pid)
       p->killed = 1;
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
+      {
         p->state = RUNNABLE;
+        rb_insert(p);
+      }
       release(&ptable.lock);
       return 0;
     }
