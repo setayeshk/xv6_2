@@ -145,25 +145,31 @@ void rb_insert_fix(struct proc* z)
     }
 }
 
-void rb_insert(struct proc* z) {
-
-  // if(rbtree.root==NULL)
-  //   return z; //age khali bud 
-
+void rb_insert(struct proc* z) 
+{
   acquire(&rbtree.lock);
+
+  if(rbtree.count == NPROC)
+  {
+    release(&rbtree.lock);
+    return;
+  }
 
   struct proc* y = NULL;
   struct proc* x = rbtree.root;
-  x->color=RED;
+  z->color =  RED;
+
   while (x != NULL) {
     y = x;
-    if (z->vruntime< x->vruntime)
+
+    if (z->vruntime < x->vruntime)
       x = x->left;
     else
       x = x->right;
   }
 
   z->parent = y;
+
   if (y == NULL)
     rbtree.root = z; // khali bude
 
@@ -172,24 +178,14 @@ void rb_insert(struct proc* z) {
   else
     y->right = z;
 
-  // if(rbtree.root!=z){
-    rb_insert_fix(z);
-  // }
-  // else{
-  //   rbtree
-  // }
-  
-  release(&rbtree.lock);
-}
+  if(rbtree.count == 0)
+    rbtree.root->parent = NULL;
 
-struct proc* rb_incorde_l(struct proc* x){ // b tarin kucheck taring ha
-  struct proc* y = x-> left;
-  struct proc* z = y-> right;
-  while(z!=NULL){
-    y=z;
-    z=z->right;
-  }
-  return y;
+  rbtree.count ++;
+
+  rb_insert_fix(z);
+
+  release(&rbtree.lock);
 }
 
 struct proc* rb_min(struct proc* x) //to shkehaye x min vruntime peyda
@@ -202,16 +198,6 @@ struct proc* rb_min(struct proc* x) //to shkehaye x min vruntime peyda
   return y;
 
 };
-
-struct proc* rb_incorde_r(struct proc* x){ // min max ha
-  struct proc* y = x-> right;
-  struct proc* z = y-> left;
-  while(z!=NULL){
-    y=z;
-    z=z->left;
-  }
-  return y;
-}
 
 struct  proc* rb_select(struct proc* x)
 {
@@ -313,46 +299,57 @@ void rb_delete_fix(struct proc* x){ //baraye in baksh az ketab estefade
   
 }
 
-void rb_delete(struct proc* a){ //baraye in baksh az ketab estefade
-  struct proc* x;
-  // struct proc* z=rb_select(a);//baraye peyda kardan ba pid bud
-  struct proc*z=a;
-  if(z==NULL){
-    //not found
-  }
-  struct proc* y=z;
-  enum Color o_color=y->color; // rang proc ke hazf
+void rb_delete(struct proc* a) //baraye in baksh az ketab estefade
+{
+  acquire(&rbtree.lock);
   
+  if(rbtree.count == 0)
+  {
+    release(&rbtree.lock);
+    return;
+  }
+  else
+  {
+    struct proc* x;
+    struct proc*z=a;
 
-  if(z->left==NULL){
-    x=z->right;
-    rb_transplant(z,x);
-  }
-  else if(z->right==NULL){
-    x=z->left;
-    rb_transplant(z,x);
-  }
-  else{
-    y=rb_min(z->right);
-    o_color=y->color;
-    x=y->right;
-    if(y->parent==z){
-      x->parent=y;
+    if(z==NULL){
+      //not found
+    }
+    struct proc* y=z;
+    enum Color o_color=y->color; // rang proc ke hazf
+
+    if(z->left==NULL){
+      x=z->right;
+      rb_transplant(z,x);
+    }
+    else if(z->right==NULL){
+      x=z->left;
+      rb_transplant(z,x);
     }
     else{
-      rb_transplant(y,y->right);
-      y->right=z->right;
-      y->right->parent=y;
+      y=rb_min(z->right);
+      o_color=y->color;
+      x=y->right;
+      if(y->parent==z){
+        x->parent=y;
+      }
+      else{
+        rb_transplant(y,y->right);
+        y->right=z->right;
+        y->right->parent=y;
+      }
+      rb_transplant(z,y);
+      y->left=z->left;
+      y->left->parent=y;
+      y->color=z->color;
     }
-    rb_transplant(z,y);
-    y->left=z->left;
-    y->left->parent=y;
-    y->color=z->color;
-    
-  }
-  if(o_color==BLACK){
+    if(o_color==BLACK){
       rb_delete_fix(x);
+    }
   }
+  rbtree.count --;
+  release(&rbtree.lock);
 }
 
 static struct proc *initproc;
@@ -367,6 +364,9 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+  initlock(&rbtree.lock, "rbtree");
+  rbtree.root = NULL;
+  rbtree.count = 0;
 }
 
 // Must be called with interrupts disabled
