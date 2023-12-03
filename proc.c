@@ -169,7 +169,7 @@ void rb_insert_fix(struct proc* z)
     }
 }
 
-void rb_insert(struct proc* z) 
+void rb_insert(struct proc* z, bool vruntime) 
 {
   acquire(&rbtree.lock);
 
@@ -177,6 +177,15 @@ void rb_insert(struct proc* z)
   {
     release(&rbtree.lock);
     return;
+  }
+  
+  //Calculate weight
+  z->weight = (int) (1024 / pow(1.25, z->nice));
+
+  if(vruntime)
+  {
+    z->vruntime = z->vruntime + ((1024 / z->weight) * z->runtime);
+    z->runtime = 0;
   }
 
   struct proc* y = NULL;
@@ -207,8 +216,6 @@ void rb_insert(struct proc* z)
 
   rbtree.count ++;
   
-  //Calculate weight
-  z->weight = (int) (1024 / pow(1.25, z->nice));
   rbtree.total_weight += z->weight;
 
   rb_insert_fix(z);
@@ -475,6 +482,13 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  p->runtime = 0;
+  p->vruntime = 0;
+  p->time_slice = 0;
+  p->right = NULL;
+  p->left = NULL;
+  p->parent = NULL;
+
   return p;
 }
 
@@ -515,7 +529,7 @@ userinit(void)
 
   release(&ptable.lock);
 
-  rb_insert(p);
+  rb_insert(p, false);
 }
 
 // Grow current process's memory by n bytes.
@@ -583,7 +597,7 @@ fork(void)
 
   release(&ptable.lock);
 
-  rb_insert(np);
+  rb_insert(np, false);
 
   return pid;
 }
@@ -752,7 +766,7 @@ yield(void)
   //interrupt dige nakhore
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
-  rb_insert(myproc());
+  rb_insert(myproc(), true);
   sched();
   release(&ptable.lock);
 }
@@ -829,7 +843,7 @@ wakeup1(void *chan)
     if(p->state == SLEEPING && p->chan == chan)
     {
       p->state = RUNNABLE;
-      rb_insert(p);
+      rb_insert(p, true);
     }
 }
 
@@ -858,7 +872,7 @@ kill(int pid)
       if(p->state == SLEEPING)
       {
         p->state = RUNNABLE;
-        rb_insert(p);
+        rb_insert(p, true);
       }
       release(&ptable.lock);
       return 0;
