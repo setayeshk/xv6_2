@@ -50,6 +50,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int runtime;       
   int vruntime;       
   int time_slice;    //time slice k ba tavajoh be nesbat weight
   struct proc* right;

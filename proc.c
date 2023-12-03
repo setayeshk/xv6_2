@@ -15,15 +15,36 @@ struct {
 } ptable;
 
 struct rb_tree {
-    struct spinlock lock;
-    struct proc* root;
-    int total_weight;
-    int period;
-    int count;
+  struct spinlock lock;
+  struct proc* min_vruntime;
+  struct proc* root;
+  int total_weight;
+  int period;
+  int count;
 };
 
 struct rb_tree rbtree;
 int min_granularity = 2;
+
+static struct proc *initproc;
+
+int nextpid = 1;
+extern void forkret(void);
+extern void trapret(void);
+
+static void wakeup1(void *chan);
+
+void
+pinit(void)
+{
+  initlock(&ptable.lock, "ptable");
+  initlock(&rbtree.lock, "rbtree");
+  rbtree.min_vruntime = NULL;
+  rbtree.period = NPROC / 2;
+  rbtree.total_weight = 0;
+  rbtree.root = NULL;
+  rbtree.count = 0;
+}
 
 void rb_rightrotate(struct proc* x) // ketab
 {
@@ -191,6 +212,10 @@ void rb_insert(struct proc* z)
   rbtree.total_weight += z->weight;
 
   rb_insert_fix(z);
+
+  if(rbtree.min_vruntime == 0 || rbtree.min_vruntime->left != NULL)
+		rbtree.min_vruntime = rb_min(rbtree.root);
+
   release(&rbtree.lock);
 }
 
@@ -360,26 +385,8 @@ void rb_delete(struct proc* a) //baraye in baksh az ketab estefade
   rbtree.count --;
   a->time_slice = (a->weight * rbtree.period) / rbtree.total_weight;
   rbtree.total_weight -= a->weight;
+  rbtree.min_vruntime = rb_min(rbtree.root);
   release(&rbtree.lock);
-}
-
-static struct proc *initproc;
-
-int nextpid = 1;
-extern void forkret(void);
-extern void trapret(void);
-
-static void wakeup1(void *chan);
-
-void
-pinit(void)
-{
-  initlock(&ptable.lock, "ptable");
-  initlock(&rbtree.lock, "rbtree");
-  rbtree.period = NPROC / 2;
-  rbtree.total_weight = 0;
-  rbtree.root = NULL;
-  rbtree.count = 0;
 }
 
 // Must be called with interrupts disabled
@@ -690,7 +697,7 @@ scheduler(void)
     // Enable interrupts on this processor.
     sti();
 
-    p = rb_min(rbtree.root);
+    p = rbtree.min_vruntime;
 
     while(p != NULL){
       rb_delete(p);
@@ -707,7 +714,7 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
-      p = rb_min(rbtree.root);
+      p = rbtree.min_vruntime;
     }
   }
 }
