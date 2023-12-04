@@ -46,6 +46,17 @@ pinit(void)
   rbtree.count = 0;
 }
 
+struct proc* rb_min(struct proc* x) //to shkehaye x min vruntime peyda
+{
+  struct proc* y= NULL;
+  while(x!=NULL){
+    y=x;
+    x=x->left;
+  }
+  return y;
+
+};
+
 void rb_rightrotate(struct proc* x) // ketab
 {
     struct proc* left = x->left;
@@ -180,7 +191,15 @@ void rb_insert(struct proc* z, bool vruntime)
   }
   
   //Calculate weight
-  z->weight = (int) (1024 / pow(1.25, z->nice));
+  double base = 1.25, e = z->nice, result = 1.0;
+
+  while (0 < e) 
+  {
+    result *= base;
+    e--;
+  }
+
+  z->weight = (int) (1024 / result);
 
   if(vruntime)
   {
@@ -220,22 +239,11 @@ void rb_insert(struct proc* z, bool vruntime)
 
   rb_insert_fix(z);
 
-  if(rbtree.min_vruntime == 0 || rbtree.min_vruntime->left != NULL)
+  if(rbtree.min_vruntime == NULL || rbtree.min_vruntime->left != NULL)
 		rbtree.min_vruntime = rb_min(rbtree.root);
 
   release(&rbtree.lock);
 }
-
-struct proc* rb_min(struct proc* x) //to shkehaye x min vruntime peyda
-{
-  struct proc* y= NULL;
-  while(x!=NULL){
-    y=x;
-    x=x->left;
-  }
-  return y;
-
-};
 
 struct  proc* rb_select(struct proc* x)
 {
